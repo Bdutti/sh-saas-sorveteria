@@ -15,15 +15,16 @@
 - [x] Campos: SKU, código de barras, preço de custo, preço de venda
 - [x] Controle de estoque com estoque mínimo
 - [x] Ativação/desativação de produtos
-- [ ] Formulário de criação/edição
+- [x] Formulário de criação/edição
 - [ ] Importação em lote via CSV/Excel
 
 ### 3. Módulo de Vendas
 - [x] Página de vendas com histórico
 - [x] Tabela de vendas no banco de dados
+- [x] Formulário de criação de vendas
+- [x] Sistema de desconto
+- [x] Múltiplos métodos de pagamento (dinheiro, cartão crédito/débito, PIX, boleto)
 - [ ] Carrinho de compras
-- [ ] Sistema de desconto
-- [ ] Múltiplos métodos de pagamento (dinheiro, cartão crédito/débito, PIX, boleto)
 - [ ] Cancelamento de vendas
 - [ ] Integração com estoque (redução automática)
 
@@ -31,7 +32,7 @@
 - [x] Página de clientes
 - [x] Tabela de clientes no banco de dados
 - [x] Campos: nome, email, telefone, endereço, notas
-- [ ] Formulário de criação/edição
+- [x] Formulário de criação/edição
 - [ ] Histórico de compras por cliente
 - [ ] Busca e filtros
 

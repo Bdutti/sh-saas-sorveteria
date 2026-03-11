@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
+import { ProductForm } from "@/components/ProductForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,15 +17,42 @@ import { useState } from "react";
 
 export default function Produtos() {
   const { isAuthenticated } = useAuth();
-  const { data: products, isLoading } = trpc.products.list.useQuery(undefined, {
+  const { data: products, isLoading, refetch } = trpc.products.list.useQuery(undefined, {
     enabled: isAuthenticated,
   });
 
   const [showForm, setShowForm] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
   if (!isAuthenticated) {
     return <div>Não autenticado</div>;
   }
+
+  const handleNewProduct = () => {
+    setSelectedProduct(null);
+    setShowForm(true);
+  };
+
+  const handleEditProduct = (product: any) => {
+    setSelectedProduct(product);
+    setShowForm(true);
+  };
+
+  const handleFormClose = () => {
+    setShowForm(false);
+    setSelectedProduct(null);
+  };
+
+  const handleFormSuccess = () => {
+    refetch();
+  };
+
+  const formatPrice = (price: number) => {
+    return (price / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  };
 
   return (
     <DashboardLayout>
@@ -41,15 +69,15 @@ export default function Produtos() {
             </p>
           </div>
           <Button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-accent hover:bg-accent/90"
+            onClick={handleNewProduct}
+            className="bg-accent hover:bg-accent/90 gap-2"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4" />
             Novo Produto
           </Button>
         </div>
 
-        {/* Produtos Table */}
+        {/* Tabela de Produtos */}
         <Card className="border-0 shadow-sm">
           <CardHeader>
             <CardTitle>Lista de Produtos</CardTitle>
@@ -67,7 +95,8 @@ export default function Produtos() {
                     <TableRow>
                       <TableHead>Nome</TableHead>
                       <TableHead>SKU</TableHead>
-                      <TableHead>Preço</TableHead>
+                      <TableHead>Preço de Venda</TableHead>
+                      <TableHead>Preço de Custo</TableHead>
                       <TableHead>Estoque</TableHead>
                       <TableHead>Mín.</TableHead>
                       <TableHead>Status</TableHead>
@@ -77,28 +106,35 @@ export default function Produtos() {
                   <TableBody>
                     {products.map((product) => (
                       <TableRow key={product.id}>
-                        <TableCell className="font-medium">{product.name}</TableCell>
-                        <TableCell>{product.sku || "-"}</TableCell>
+                        <TableCell className="font-medium">
+                          {product.name}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {product.sku || "-"}
+                        </TableCell>
                         <TableCell>
-                          R$ {((product.price || 0) / 100).toFixed(2)}
+                          {formatPrice(product.price || 0)}
+                        </TableCell>
+                        <TableCell>
+                          {formatPrice(product.cost || 0)}
                         </TableCell>
                         <TableCell>
                           <span
                             className={`px-2 py-1 rounded text-sm font-medium ${
-                              product.stock! <= product.minStock!
-                                ? "bg-destructive/10 text-destructive"
-                                : "bg-accent/10 text-accent"
+                              product.stock > (product.minStock || 0)
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
                             }`}
                           >
                             {product.stock}
                           </span>
                         </TableCell>
-                        <TableCell>{product.minStock}</TableCell>
+                        <TableCell>{product.minStock || 0}</TableCell>
                         <TableCell>
                           <span
-                            className={`px-2 py-1 rounded text-sm font-medium ${
+                            className={`px-2 py-1 rounded text-sm ${
                               product.active
-                                ? "bg-green-100 text-green-800"
+                                ? "bg-blue-100 text-blue-800"
                                 : "bg-gray-100 text-gray-800"
                             }`}
                           >
@@ -109,6 +145,7 @@ export default function Produtos() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => handleEditProduct(product)}
                             className="text-accent hover:bg-accent/10"
                           >
                             <Edit className="h-4 w-4" />
@@ -135,6 +172,14 @@ export default function Produtos() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Formulário Modal */}
+      <ProductForm
+        open={showForm}
+        onOpenChange={handleFormClose}
+        product={selectedProduct}
+        onSuccess={handleFormSuccess}
+      />
     </DashboardLayout>
   );
 }

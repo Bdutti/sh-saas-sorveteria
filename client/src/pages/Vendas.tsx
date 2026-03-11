@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
+import { SaleForm } from "@/components/SaleForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,11 +17,10 @@ import { useState } from "react";
 
 const paymentMethodLabels: Record<string, string> = {
   dinheiro: "Dinheiro",
-  cartao_credito: "Cartão Crédito",
-  cartao_debito: "Cartão Débito",
+  credito: "Cartão Crédito",
+  debito: "Cartão Débito",
   pix: "PIX",
   boleto: "Boleto",
-  outro: "Outro",
 };
 
 const statusLabels: Record<string, string> = {
@@ -31,7 +31,7 @@ const statusLabels: Record<string, string> = {
 
 export default function Vendas() {
   const { isAuthenticated } = useAuth();
-  const { data: sales, isLoading } = trpc.sales.list.useQuery(
+  const { data: sales, isLoading, refetch } = trpc.sales.list.useQuery(
     { limit: 50, offset: 0 },
     { enabled: isAuthenticated }
   );
@@ -41,6 +41,21 @@ export default function Vendas() {
   if (!isAuthenticated) {
     return <div>Não autenticado</div>;
   }
+
+  const handleFormClose = () => {
+    setShowForm(false);
+  };
+
+  const handleFormSuccess = () => {
+    refetch();
+  };
+
+  const formatPrice = (price: number) => {
+    return (price / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  };
 
   return (
     <DashboardLayout>
@@ -53,19 +68,77 @@ export default function Vendas() {
               Vendas
             </h1>
             <p className="text-muted-foreground mt-1">
-              Gerencie suas vendas e transações
+              Registre e acompanhe suas vendas
             </p>
           </div>
           <Button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-accent hover:bg-accent/90"
+            onClick={() => setShowForm(true)}
+            className="bg-accent hover:bg-accent/90 gap-2"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4" />
             Nova Venda
           </Button>
         </div>
 
-        {/* Vendas Table */}
+        {/* Resumo de Vendas */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-accent" />
+                Total de Vendas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{sales?.length || 0}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Últimas 50 vendas
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <ShoppingCart className="h-4 w-4 text-accent" />
+                Receita Total
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatPrice(
+                  sales?.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0) || 0
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                De todas as vendas
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-accent" />
+                Ticket Médio
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatPrice(
+                  sales && sales.length > 0
+                    ? sales.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0) / sales.length
+                    : 0
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Valor médio por venda
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabela de Vendas */}
         <Card className="border-0 shadow-sm">
           <CardHeader>
             <CardTitle>Histórico de Vendas</CardTitle>
@@ -82,11 +155,12 @@ export default function Vendas() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>ID</TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Total</TableHead>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Valor</TableHead>
                       <TableHead>Desconto</TableHead>
                       <TableHead>Método de Pagamento</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Data</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -94,24 +168,17 @@ export default function Vendas() {
                     {sales.map((sale) => (
                       <TableRow key={sale.id}>
                         <TableCell className="font-medium">#{sale.id}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            {new Date(sale.saleDate).toLocaleDateString("pt-BR")}
-                          </div>
+                        <TableCell className="text-sm">
+                          {sale.customerId || "-"}
                         </TableCell>
                         <TableCell className="font-semibold">
-                          R$ {((sale.totalAmount || 0) / 100).toFixed(2)}
+                          {formatPrice(sale.totalAmount || 0)}
                         </TableCell>
-                        <TableCell>
-                          {sale.discount && sale.discount > 0
-                            ? `R$ ${(sale.discount / 100).toFixed(2)}`
-                            : "-"}
+                        <TableCell className="text-sm">
+                          {sale.discount ? formatPrice(sale.discount) : "-"}
                         </TableCell>
-                        <TableCell>
-                          <span className="px-2 py-1 rounded text-sm bg-muted">
-                            {paymentMethodLabels[sale.paymentMethod || "outro"] || sale.paymentMethod}
-                          </span>
+                        <TableCell className="text-sm">
+                          {paymentMethodLabels[sale.paymentMethod || ""] || sale.paymentMethod}
                         </TableCell>
                         <TableCell>
                           <span
@@ -123,8 +190,11 @@ export default function Vendas() {
                                 : "bg-red-100 text-red-800"
                             }`}
                           >
-                            {statusLabels[sale.status || "concluida"] || sale.status}
+                            {statusLabels[sale.status || ""] || sale.status}
                           </span>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(sale.createdAt).toLocaleDateString("pt-BR")}
                         </TableCell>
                         <TableCell className="text-right space-x-2">
                           <Button
@@ -156,6 +226,13 @@ export default function Vendas() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Formulário Modal */}
+      <SaleForm
+        open={showForm}
+        onOpenChange={handleFormClose}
+        onSuccess={handleFormSuccess}
+      />
     </DashboardLayout>
   );
 }

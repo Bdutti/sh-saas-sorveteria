@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
+import { CustomerForm } from "@/components/CustomerForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,11 +17,31 @@ import { useState } from "react";
 
 export default function Clientes() {
   const { isAuthenticated } = useAuth();
-  const { data: customers, isLoading } = trpc.customers.list.useQuery(undefined, {
+  const { data: customers, isLoading, refetch } = trpc.customers.list.useQuery(undefined, {
     enabled: isAuthenticated,
   });
 
   const [showForm, setShowForm] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+
+  const handleNewCustomer = () => {
+    setSelectedCustomer(null);
+    setShowForm(true);
+  };
+
+  const handleEditCustomer = (customer: any) => {
+    setSelectedCustomer(customer);
+    setShowForm(true);
+  };
+
+  const handleFormClose = () => {
+    setShowForm(false);
+    setSelectedCustomer(null);
+  };
+
+  const handleFormSuccess = () => {
+    refetch();
+  };
 
   if (!isAuthenticated) {
     return <div>Não autenticado</div>;
@@ -41,10 +62,10 @@ export default function Clientes() {
             </p>
           </div>
           <Button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-accent hover:bg-accent/90"
+            onClick={handleNewCustomer}
+            className="bg-accent hover:bg-accent/90 gap-2"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4" />
             Novo Cliente
           </Button>
         </div>
@@ -114,6 +135,7 @@ export default function Clientes() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => handleEditCustomer(customer)}
                             className="text-accent hover:bg-accent/10"
                           >
                             <Edit className="h-4 w-4" />
@@ -140,6 +162,14 @@ export default function Clientes() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Formulário Modal */}
+      <CustomerForm
+        open={showForm}
+        onOpenChange={handleFormClose}
+        customer={selectedCustomer}
+        onSuccess={handleFormSuccess}
+      />
     </DashboardLayout>
   );
 }
