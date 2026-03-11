@@ -5,13 +5,25 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import Produtos from "./pages/Produtos";
+import Clientes from "./pages/Clientes";
+import Vendas from "./pages/Vendas";
+import Caixa from "./pages/Caixa";
+import Relatorios from "./pages/Relatorios";
+import Backup from "./pages/Backup";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
+      <Route path="/" component={Home} />
+      <Route path="/produtos" component={Produtos} />
+      <Route path="/clientes" component={Clientes} />
+      <Route path="/vendas" component={Vendas} />
+      <Route path="/caixa" component={Caixa} />
+      <Route path="/relatorios" component={Relatorios} />
+      <Route path="/backup" component={Backup} />
+      <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>
@@ -19,9 +31,8 @@ function Router() {
 }
 
 // NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
+// - Light mode theme for professional ERP application
+// - Color palette: Professional blue + white + accents
 
 function App() {
   return (
